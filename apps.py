@@ -139,9 +139,10 @@ st.markdown("""
     }
     .login-title {
         text-align: center;
-        color: 000080;
+        color: white;  /* Changed from #1f77b4 to white */
         margin-bottom: 1.5rem;
         font-size: 1.8rem;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3); /* Added subtle shadow for better readability */
     }
     .risk-low {
         background-color: #d4edda;
@@ -1152,4 +1153,5 @@ def show_retention_strategies():
 
 if __name__ == "__main__":
     main()
+
 
