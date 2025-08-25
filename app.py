@@ -1,15 +1,14 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import io
 
-st.set_page_config(page_title="TechNova Attrition Dashboard 🌟", layout="wide")
+st.set_page_config(page_title="TechNova Attrition Heatmap 🌟", layout="wide")
 
 # Background gradient
 st.markdown("""
     <style>
     body {
-        background: linear-gradient(to right, #e0f7fa, #ffffff);
+        background: linear-gradient(to right, #fffde7, #ffffff);
     }
     .stButton>button {
         background-color: #4caf50;
@@ -18,17 +17,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("TechNova Employee Attrition Dashboard 🌟")
-st.subheader("Predict & Analyze Employee Attrition 💼✨")
-
-# ---------------- Sidebar ----------------
-st.sidebar.title("Navigation 🌟")
-page = st.sidebar.radio("Menu", ["Dashboard & Input", "Prediction Result"])
+st.title("TechNova Attrition Risk & Engagement Planner 🌟")
+st.subheader("Department Heatmap & Personalized Risk Analysis 💼✨")
 
 # ---------------- File Uploads ----------------
-st.sidebar.markdown("### Upload Required Files")
+st.sidebar.title("Upload Files 🌟")
 dataset_file = st.sidebar.file_uploader("Upload Dataset CSV", type="csv")
-model_file = st.sidebar.file_uploader("Upload Trained Model (.pkl)", type="pkl")
+model_file = st.sidebar.file_uploader("Upload Model (.pkl)", type="pkl")
 preprocessor_file = st.sidebar.file_uploader("Upload Preprocessor (.pkl)", type="pkl")
 
 if dataset_file and model_file and preprocessor_file:
@@ -36,74 +31,65 @@ if dataset_file and model_file and preprocessor_file:
     model = joblib.load(model_file)
     preprocessor = joblib.load(preprocessor_file)
     
-    # ---------------- PAGE 1 ----------------
-    if page == "Dashboard & Input":
-        st.header("Dashboard & Employee Input 💼")
-        
-        # KPIs
-        total_employees = df.shape[0]
-        attrition_count = df[df['attrition'] == 'Yes'].shape[0]
-        attrition_rate = round((attrition_count / total_employees) * 100, 2)
-        avg_tenure = round(df['tenure'].mean(), 2)
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Employees 👥", total_employees)
-        col2.metric("Attrition Rate 📉", f"{attrition_rate}%")
-        col3.metric("Average Tenure 🕒", f"{avg_tenure} years")
-        
-        # Employee Input Form
-        st.subheader("Enter Employee Details for Prediction")
-        input_data = {}
-        for feature in df.drop(columns=['attrition']).columns:
-            if df[feature].dtype == 'object':
-                input_data[feature] = st.selectbox(feature, df[feature].unique(), key=feature)
-            else:
-                input_data[feature] = st.number_input(
-                    feature,
-                    float(df[feature].min()),
-                    float(df[feature].max()),
-                    float(df[feature].median()),
-                    key=feature
-                )
-        
-        if st.button("Save Input for Prediction"):
-            st.session_state['input_data'] = input_data
-            st.success("Employee data saved! Navigate to 'Prediction Result' in the sidebar.")
-
-    # ---------------- PAGE 2 ----------------
-    if page == "Prediction Result":
-        st.header("Prediction Result 📊")
-        
-        if 'input_data' in st.session_state:
-            input_df = pd.DataFrame([st.session_state['input_data']])
-            input_transformed = preprocessor.transform(input_df)
-            prediction = model.predict(input_transformed)[0]
-            
-            st.success(f"Attrition Risk: {'High 😢' if prediction==1 else 'Low 🎉'}")
-            
-            # Dynamic Tips
-            st.subheader("Recommended Actions 💡")
-            tips = []
-            data = st.session_state['input_data']
-            
-            if prediction == 1:
-                if data.get('job_satisfaction',5) <= 3:
-                    tips.append("Low job satisfaction – provide mentoring or career growth opportunities.")
-                if data.get('work_env_satisfaction',5) <= 3:
-                    tips.append("Improve work environment and team collaboration.")
-                if data.get('overtime','No')=='Yes':
-                    tips.append("Reduce overtime and workload stress.")
-                if data.get('tenure',0) < 2:
-                    tips.append("Focus on onboarding and early engagement programs.")
-                if data.get('promotion_last_5years',0) == 0:
-                    tips.append("Offer promotion or skill development opportunities.")
-                if not tips:
-                    tips.append("General engagement programs and recognition may help.")
-                for tip in tips:
-                    st.info(f"⚠️ {tip}")
-            else:
-                st.info("✅ Low risk of attrition. Maintain current engagement practices.")
+    # ---------------- Department Heatmap ----------------
+    st.header("Department Attrition Heatmap 🔥")
+    dept_summary = df.groupby('department')['attrition'].apply(lambda x: (x=='Yes').mean()*100)
+    heatmap_df = pd.DataFrame(dept_summary).reset_index()
+    heatmap_df.rename(columns={'attrition':'Attrition Rate (%)'}, inplace=True)
+    
+    # Color-code attrition rates
+    def color_rate(val):
+        if val > 25: return 'background-color: #ff8a80'  # High risk
+        elif val > 10: return 'background-color: #fff176'  # Medium risk
+        else: return 'background-color: #b9f6ca'           # Low risk
+    
+    st.dataframe(heatmap_df.style.applymap(color_rate, subset=['Attrition Rate (%)']))
+    
+    st.markdown("---")
+    
+    # ---------------- Individual Employee Risk ----------------
+    st.header("Predict Individual Employee Attrition 🔮")
+    st.subheader("Enter Employee Details")
+    input_data = {}
+    for feature in df.drop(columns=['attrition']).columns:
+        if df[feature].dtype == 'object':
+            input_data[feature] = st.selectbox(feature, df[feature].unique(), key=feature)
         else:
-            st.warning("No employee data found. Please enter data in 'Dashboard & Input' page first.")
+            input_data[feature] = st.number_input(
+                feature,
+                float(df[feature].min()),
+                float(df[feature].max()),
+                float(df[feature].median()),
+                key=feature
+            )
+    
+    if st.button("Predict Risk 🚀"):
+        input_df = pd.DataFrame([input_data])
+        input_transformed = preprocessor.transform(input_df)
+        prediction = model.predict(input_transformed)[0]
+        
+        st.success(f"Attrition Risk: {'High 😢' if prediction==1 else 'Low 🎉'}")
+        
+        # Personalized Engagement Plan
+        st.subheader("Recommended Engagement Plan 💡")
+        plan = []
+        if prediction==1:
+            if input_data.get('job_satisfaction',5)<=3:
+                plan.append("Boost job satisfaction: mentoring or career growth opportunities.")
+            if input_data.get('work_env_satisfaction',5)<=3:
+                plan.append("Improve work environment and team collaboration.")
+            if input_data.get('overtime','No')=='Yes':
+                plan.append("Adjust workload and reduce overtime.")
+            if input_data.get('tenure',0)<2:
+                plan.append("Enhance onboarding and early engagement programs.")
+            if input_data.get('promotion_last_5years',0)==0:
+                plan.append("Offer skill development or promotion opportunities.")
+            if not plan:
+                plan.append("General engagement programs and recognition.")
+        else:
+            plan.append("Employee is low-risk. Maintain current engagement practices.")
+        
+        for p in plan:
+            st.info(f"⚠️ {p}")
 else:
-    st.warning("Please upload the dataset, model, and preprocessor files in the sidebar to continue.")
+    st.warning("Please upload dataset, model, and preprocessor files in the sidebar to continue.")
