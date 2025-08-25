@@ -8,25 +8,38 @@ from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-# ---------------- File Paths ----------------
-data_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\rawdata\technova_attrition_dataset.csv"
-model_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\artifacts\model.pkl"
-preprocessor_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\artifacts\preprocessor.pkl"
+import os
 
 # Set page configuration as the first Streamlit command
 st.set_page_config(page_title="TechNova Attrition Predictor", layout="wide", initial_sidebar_state="expanded")
 
-# Load the model and preprocessor
+# ---------------- File Paths ----------------
+# Use relative paths for better portability
+# This assumes the 'artifacts' and 'rawdata' folders are in the same directory as this script.
+artifacts_dir = "artifacts"
+rawdata_dir = "rawdata"
+
+model_path = os.path.join(artifacts_dir, "model.pkl")
+preprocessor_path = os.path.join(artifacts_dir, "preprocessor.pkl")
+data_path = os.path.join(rawdata_dir, "technova_attrition_dataset.csv")
+
+# ---------------- Load Files with Error Handling ----------------
 try:
+    if not os.path.exists(artifacts_dir):
+        st.error(f"❌ The directory '{artifacts_dir}' was not found. Please create it.")
+        st.stop()
+
+    if not os.path.exists(model_path) or not os.path.exists(preprocessor_path):
+        st.error("❌ Required files ('model.pkl', 'preprocessor.pkl') not found in the 'artifacts' directory.")
+        st.info("💡 **Solution:** Ensure you have run a separate script to train your model and save these files.")
+        st.stop()
+        
     model = joblib.load(model_path)
     preprocessor = joblib.load(preprocessor_path)
+    
     st.success("✅ Model and preprocessor loaded successfully!")
-except FileNotFoundError:
-    st.error("❌ Required files (model.pkl, preprocessor.pkl) not found. Please ensure they are in the 'artifacts' directory.")
-    st.stop()
 except Exception as e:
-    st.error(f"❌ An error occurred while loading files: {e}")
+    st.error(f"❌ An unexpected error occurred while loading files: {e}")
     st.stop()
 
 # ---------------- Streamlit App ----------------
