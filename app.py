@@ -2,94 +2,88 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-st.set_page_config(page_title="TechNova Attrition Heatmap 🌟", layout="wide")
+st.set_page_config(page_title="Attrition Scenario Simulator 🌟", layout="wide")
 
-# Background gradient
 st.markdown("""
     <style>
     body {
-        background: linear-gradient(to right, #fffde7, #ffffff);
+        background: linear-gradient(to right, #e1f5fe, #ffffff);
     }
     .stButton>button {
-        background-color: #4caf50;
+        background-color: #0288d1;
         color: white;
     }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("TechNova Attrition Risk & Engagement Planner 🌟")
-st.subheader("Department Heatmap & Personalized Risk Analysis 💼✨")
+st.title("TechNova Attrition Scenario Simulator 🌟")
+st.subheader("Test employee interventions & see predicted risk 💼✨")
 
-# ---------------- File Uploads ----------------
-st.sidebar.title("Upload Files 🌟")
-dataset_file = st.sidebar.file_uploader("Upload Dataset CSV", type="csv")
-model_file = st.sidebar.file_uploader("Upload Model (.pkl)", type="pkl")
-preprocessor_file = st.sidebar.file_uploader("Upload Preprocessor (.pkl)", type="pkl")
+# ---------------- Paths ----------------
+data_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\rawdata\technova_attrition_dataset.csv"
+model_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\artifacts\model.pkl"
+preprocessor_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\artifacts\preprocessor.pkl"
 
-if dataset_file and model_file and preprocessor_file:
-    df = pd.read_csv(dataset_file)
-    model = joblib.load(model_file)
-    preprocessor = joblib.load(preprocessor_file)
-    
-    # ---------------- Department Heatmap ----------------
-    st.header("Department Attrition Heatmap 🔥")
-    dept_summary = df.groupby('department')['attrition'].apply(lambda x: (x=='Yes').mean()*100)
-    heatmap_df = pd.DataFrame(dept_summary).reset_index()
-    heatmap_df.rename(columns={'attrition':'Attrition Rate (%)'}, inplace=True)
-    
-    # Color-code attrition rates
-    def color_rate(val):
-        if val > 25: return 'background-color: #ff8a80'  # High risk
-        elif val > 10: return 'background-color: #fff176'  # Medium risk
-        else: return 'background-color: #b9f6ca'           # Low risk
-    
-    st.dataframe(heatmap_df.style.applymap(color_rate, subset=['Attrition Rate (%)']))
-    
-    st.markdown("---")
-    
-    # ---------------- Individual Employee Risk ----------------
-    st.header("Predict Individual Employee Attrition 🔮")
-    st.subheader("Enter Employee Details")
-    input_data = {}
-    for feature in df.drop(columns=['attrition']).columns:
-        if df[feature].dtype == 'object':
-            input_data[feature] = st.selectbox(feature, df[feature].unique(), key=feature)
-        else:
-            input_data[feature] = st.number_input(
-                feature,
-                float(df[feature].min()),
-                float(df[feature].max()),
-                float(df[feature].median()),
-                key=feature
-            )
-    
-    if st.button("Predict Risk 🚀"):
-        input_df = pd.DataFrame([input_data])
-        input_transformed = preprocessor.transform(input_df)
-        prediction = model.predict(input_transformed)[0]
-        
-        st.success(f"Attrition Risk: {'High 😢' if prediction==1 else 'Low 🎉'}")
-        
-        # Personalized Engagement Plan
-        st.subheader("Recommended Engagement Plan 💡")
-        plan = []
-        if prediction==1:
-            if input_data.get('job_satisfaction',5)<=3:
-                plan.append("Boost job satisfaction: mentoring or career growth opportunities.")
-            if input_data.get('work_env_satisfaction',5)<=3:
-                plan.append("Improve work environment and team collaboration.")
-            if input_data.get('overtime','No')=='Yes':
-                plan.append("Adjust workload and reduce overtime.")
-            if input_data.get('tenure',0)<2:
-                plan.append("Enhance onboarding and early engagement programs.")
-            if input_data.get('promotion_last_5years',0)==0:
-                plan.append("Offer skill development or promotion opportunities.")
-            if not plan:
-                plan.append("General engagement programs and recognition.")
-        else:
-            plan.append("Employee is low-risk. Maintain current engagement practices.")
-        
-        for p in plan:
-            st.info(f"⚠️ {p}")
-else:
-    st.warning("Please upload dataset, model, and preprocessor files in the sidebar to continue.")
+# Load dataset and artifacts
+try:
+    df = pd.read_csv(data_path)
+    model = joblib.load(model_path)
+    preprocessor = joblib.load(preprocessor_path)
+except FileNotFoundError:
+    st.error("Dataset or artifacts not found. Please check the paths.")
+
+# ---------------- Employee Input ----------------
+st.header("Enter Base Employee Profile")
+input_data = {}
+for feature in df.drop(columns=['attrition']).columns:
+    if df[feature].dtype == 'object':
+        input_data[feature] = st.selectbox(feature, df[feature].unique(), key=feature)
+    else:
+        input_data[feature] = st.number_input(
+            feature,
+            float(df[feature].min()),
+            float(df[feature].max()),
+            float(df[feature].median()),
+            key=feature
+        )
+
+st.header("Simulate Scenarios 🔄")
+st.markdown("Adjust one or more features to see the impact on predicted attrition risk.")
+
+# Scenario Inputs
+salary_scenario = st.number_input("Simulate Salary", float(df['salary'].min()), float(df['salary'].max()), float(input_data['salary']))
+overtime_scenario = st.selectbox("Simulate Overtime", ['Yes','No'], index=0 if input_data.get('overtime','No')=='Yes' else 1)
+job_satisfaction_scenario = st.slider("Simulate Job Satisfaction (1-5)", 1, 5, input_data.get('job_satisfaction',3))
+work_env_scenario = st.slider("Simulate Work Environment Satisfaction (1-5)", 1, 5, input_data.get('work_env_satisfaction',3))
+
+if st.button("Run Scenario Analysis 🚀"):
+    scenario_data = input_data.copy()
+    scenario_data['salary'] = salary_scenario
+    scenario_data['overtime'] = overtime_scenario
+    scenario_data['job_satisfaction'] = job_satisfaction_scenario
+    scenario_data['work_env_satisfaction'] = work_env_scenario
+
+    scenario_df = pd.DataFrame([scenario_data])
+    scenario_transformed = preprocessor.transform(scenario_df)
+    scenario_prediction = model.predict(scenario_transformed)[0]
+
+    st.success(f"Predicted Attrition Risk for this scenario: {'High 😢' if scenario_prediction==1 else 'Low 🎉'}")
+
+    # Personalized Engagement Plan
+    st.subheader("Scenario-Based Recommendations 💡")
+    tips = []
+    if scenario_prediction==1:
+        if job_satisfaction_scenario <= 3:
+            tips.append("Increase job satisfaction through mentoring or career growth.")
+        if work_env_scenario <= 3:
+            tips.append("Improve team environment and collaboration.")
+        if overtime_scenario=='Yes':
+            tips.append("Reduce overtime or provide flexible hours.")
+        if salary_scenario < input_data['salary']:
+            tips.append("Consider increasing salary to retain employee.")
+        if not tips:
+            tips.append("General engagement programs recommended.")
+        for tip in tips:
+            st.info(f"⚠️ {tip}")
+    else:
+        st.info("✅ Low risk scenario. Employee likely to stay under these conditions.")
