@@ -146,52 +146,44 @@ try:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.subheader("Attrition by Department")
-        dept_attrition = df.groupby('department')['attrition'].mean().reset_index()
-        fig, ax = plt.subplots(figsize=(6, 4))
-        sns.barplot(x='department', y='attrition', data=dept_attrition, palette='viridis', ax=ax)
-        ax.set_title('Average Attrition Rate per Department')
-        ax.set_xlabel('Department')
-        ax.set_ylabel('Attrition Rate')
-        ax.tick_params(axis='x', rotation=45)
+        st.subheader("Education Level Distribution")
+        education_counts = df['education'].value_counts()
+        education_labels = {1: 'Below College', 2: 'College', 3: 'Bachelor', 4: 'Master', 5: 'Doctor'}
+        education_counts.index = education_counts.index.map(education_labels)
+        fig, ax = plt.subplots(figsize=(6, 6))
+        # Use a more vibrant color list for the pie chart
+        colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#c2c2f0']
+        ax.pie(education_counts, labels=education_counts.index, autopct='%1.1f%%', startangle=90, colors=colors)
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
         st.pyplot(fig)
         
     with col2:
-        st.subheader("Job Satisfaction by Attrition")
-        # Ensure job_satisfaction is in your dataset for this to work
-        if 'job_satisfaction' in df.columns and 'attrition' in df.columns:
-            satisfaction_avg = df.groupby('attrition')['job_satisfaction'].mean().reset_index()
-            satisfaction_avg['attrition'] = satisfaction_avg['attrition'].map({0: 'Stayed', 1: 'Left'})
-            fig, ax = plt.subplots(figsize=(6, 4))
-            sns.barplot(x='attrition', y='job_satisfaction', data=satisfaction_avg, palette='plasma', ax=ax)
-            ax.set_title('Average Job Satisfaction')
-            ax.set_xlabel('Attrition Status')
-            ax.set_ylabel('Average Job Satisfaction (1-4)')
-            st.pyplot(fig)
-        else:
-            st.warning("Job satisfaction or attrition data is not available for charting.")
+        st.subheader("Average Salary by Department")
+        avg_salary_dept = df.groupby('department')['salary'].mean().reset_index()
+        fig, ax = plt.subplots(figsize=(6, 4))
+        # Use a different, more professional seaborn palette
+        sns.barplot(x='department', y='salary', data=avg_salary_dept, palette='pastel', ax=ax)
+        ax.set_title('Average Monthly Salary per Department')
+        ax.set_xlabel('Department')
+        ax.set_ylabel('Average Salary')
+        ax.tick_params(axis='x', rotation=45)
+        st.pyplot(fig)
     
     with col3:
-        st.subheader("Attrition by Age")
-        # Calculate attrition rate for each age group
-        age_attrition_rate = df.groupby('age')['attrition'].mean().reset_index()
+        st.subheader("Job Satisfaction vs. Last Promotion")
+        satisfaction_by_promo = df.groupby('years_since_last_promotion')['job_satisfaction'].mean().reset_index()
         fig, ax = plt.subplots(figsize=(6, 4))
-        sns.lineplot(x='age', y='attrition', data=age_attrition_rate, marker='o', ax=ax, color='red')
-        ax.set_title('Attrition Rate by Age')
-        ax.set_xlabel('Age')
-        ax.set_ylabel('Attrition Rate')
+        # Use a different color for the line plot
+        sns.lineplot(x='years_since_last_promotion', y='job_satisfaction', data=satisfaction_by_promo, marker='o', ax=ax, color='teal')
+        ax.set_title('Avg. Job Satisfaction by Years Since Last Promotion')
+        ax.set_xlabel('Years Since Last Promotion')
+        ax.set_ylabel('Avg. Job Satisfaction (1-4)')
         st.pyplot(fig)
             
 except FileNotFoundError:
-    st.warning("📊 Dataset file not found. Cannot display charts.")
+    st.warning("📊 Dataset file not found. Cannot display dataset statistics.")
 except KeyError as e:
     st.warning(f"📊 A required column was not found in the dataset for charting: {e}")
 
 st.markdown("---")
-
-st.markdown("""
-<div style='text-align: center;'>
-    <p>🚀 Powered by Machine Learning for a better workplace.</p>
-    <p>TechNova Solutions © 2025</p>
-</div>
-""", unsafe_allow_html=True)
+st.info("Developed with ❤️ for TechNova Solutions to build a better workplace.")
