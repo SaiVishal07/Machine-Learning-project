@@ -11,6 +11,7 @@ import pickle
 import hashlib
 import json
 from datetime import datetime
+import os
 
 # Page configuration
 st.set_page_config(
@@ -217,55 +218,6 @@ def logout_user():
     st.session_state.logged_in = False
     st.session_state.username = None
 
-# Load data from CSV file
-@st.cache_data
-def load_data():
-    try:
-        # Load the dataset from the provided CSV file
-        df = pd.read_csv(r"C:\Users\chand\OneDrive\Desktop\MLproject\rawdata\technova_attrition_dataset.csv")
-        
-        # Map the target variable to 0 and 1 if it's categorical
-        if 'Attrition' in df.columns:
-            df['Attrition'] = df['Attrition'].map({'Yes': 1, 'No': 0})
-        
-        # Rename columns to match the expected format in the app
-        column_mapping = {
-            'Age': 'age',
-            'JobSatisfaction': 'job_satisfaction',
-            'MonthlyIncome': 'salary',
-            'YearsAtCompany': 'tenure',
-            'EnvironmentSatisfaction': 'work_env_satisfaction',
-            'OverTime': 'overtime',
-            'MaritalStatus': 'marital_status',
-            'Education': 'education',
-            'Department': 'department',
-            'YearsSinceLastPromotion': 'years_since_last_promotion',
-            'TrainingTimesLastYear': 'training_hours',
-            'WorkLifeBalance': 'work_life_balance',
-            'Attrition': 'attrition'
-        }
-        
-        df = df.rename(columns=column_mapping)
-        
-        # Ensure all required columns are present
-        required_columns = ['age', 'job_satisfaction', 'salary', 'tenure', 'work_env_satisfaction', 
-                          'overtime', 'marital_status', 'education', 'department', 
-                          'years_since_last_promotion', 'training_hours', 'work_life_balance', 'attrition']
-        
-        # Add missing columns with default values if necessary
-        for col in required_columns:
-            if col not in df.columns:
-                if col == 'promotion_last_5years':
-                    df[col] = (df['years_since_last_promotion'] <= 5).astype(int)
-                else:
-                    df[col] = 0  # Default value for missing columns
-        
-        return df
-    except Exception as e:
-        st.error(f"Error loading dataset: {str(e)}")
-        st.info("Using sample data instead.")
-        return load_sample_data()
-
 # Sample data generation (fallback if CSV loading fails)
 @st.cache_data
 def load_sample_data():
@@ -304,6 +256,125 @@ def load_sample_data():
     
     df['attrition'] = np.random.binomial(1, attrition_prob.clip(0, 0.9))
     return df
+
+# Load data from CSV file
+@st.cache_data
+def load_data():
+    # Try multiple possible paths for the dataset
+    possible_paths = [
+        r"C:\Users\chand\OneDrive\Desktop\MLproject\rawdata\technova_attrition_dataset.csv",
+        r"C:\Users\chand\OneDrive\Desktop\Mt_project\rawdata\technova_attrition_dataset.csv",
+        "./rawdata/technova_attrition_dataset.csv",
+        "../rawdata/technova_attrition_dataset.csv",
+        "technova_attrition_dataset.csv"
+    ]
+    
+    for path in possible_paths:
+        try:
+            if os.path.exists(path):
+                # Load the dataset from the provided CSV file
+                df = pd.read_csv(path)
+                
+                # Map the target variable to 0 and 1 if it's categorical
+                if 'Attrition' in df.columns:
+                    df['Attrition'] = df['Attrition'].map({'Yes': 1, 'No': 0})
+                
+                # Rename columns to match the expected format in the app
+                column_mapping = {
+                    'Age': 'age',
+                    'JobSatisfaction': 'job_satisfaction',
+                    'MonthlyIncome': 'salary',
+                    'YearsAtCompany': 'tenure',
+                    'EnvironmentSatisfaction': 'work_env_satisfaction',
+                    'OverTime': 'overtime',
+                    'MaritalStatus': 'marital_status',
+                    'Education': 'education',
+                    'Department': 'department',
+                    'YearsSinceLastPromotion': 'years_since_last_promotion',
+                    'TrainingTimesLastYear': 'training_hours',
+                    'WorkLifeBalance': 'work_life_balance',
+                    'Attrition': 'attrition'
+                }
+                
+                # Apply the mapping for existing columns
+                for old_col, new_col in column_mapping.items():
+                    if old_col in df.columns:
+                        df[new_col] = df[old_col]
+                
+                # Ensure all required columns are present
+                required_columns = ['age', 'job_satisfaction', 'salary', 'tenure', 'work_env_satisfaction', 
+                                  'overtime', 'marital_status', 'education', 'department', 
+                                  'years_since_last_promotion', 'training_hours', 'work_life_balance', 'attrition']
+                
+                # Add missing columns with default values if necessary
+                for col in required_columns:
+                    if col not in df.columns:
+                        if col == 'promotion_last_5years':
+                            df[col] = (df['years_since_last_promotion'] <= 5).astype(int)
+                        else:
+                            df[col] = 0  # Default value for missing columns
+                
+                st.success(f"✅ Dataset loaded successfully from: {path}")
+                return df
+        except Exception as e:
+            continue
+    
+    # If none of the paths worked, try file uploader
+    st.warning("⚠️ Could not find dataset file. Please upload your dataset or we'll use sample data.")
+    
+    uploaded_file = st.file_uploader("Upload technova_attrition_dataset.csv", type="csv")
+    
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            
+            # Map the target variable to 0 and 1 if it's categorical
+            if 'Attrition' in df.columns:
+                df['Attrition'] = df['Attrition'].map({'Yes': 1, 'No': 0})
+            
+            # Rename columns to match the expected format in the app
+            column_mapping = {
+                'Age': 'age',
+                'JobSatisfaction': 'job_satisfaction',
+                'MonthlyIncome': 'salary',
+                'YearsAtCompany': 'tenure',
+                'EnvironmentSatisfaction': 'work_env_satisfaction',
+                'OverTime': 'overtime',
+                'MaritalStatus': 'marital_status',
+                'Education': 'education',
+                'Department': 'department',
+                'YearsSinceLastPromotion': 'years_since_last_promotion',
+                'TrainingTimesLastYear': 'training_hours',
+                'WorkLifeBalance': 'work_life_balance',
+                'Attrition': 'attrition'
+            }
+            
+            # Apply the mapping for existing columns
+            for old_col, new_col in column_mapping.items():
+                if old_col in df.columns:
+                    df[new_col] = df[old_col]
+            
+            # Ensure all required columns are present
+            required_columns = ['age', 'job_satisfaction', 'salary', 'tenure', 'work_env_satisfaction', 
+                              'overtime', 'marital_status', 'education', 'department', 
+                              'years_since_last_promotion', 'training_hours', 'work_life_balance', 'attrition']
+            
+            # Add missing columns with default values if necessary
+            for col in required_columns:
+                if col not in df.columns:
+                    if col == 'promotion_last_5years':
+                        df[col] = (df['years_since_last_promotion'] <= 5).astype(int)
+                    else:
+                        df[col] = 0  # Default value for missing columns
+            
+            st.success("✅ Dataset uploaded successfully!")
+            return df
+        except Exception as e:
+            st.error(f"Error reading uploaded file: {str(e)}")
+    
+    # If all else fails, use sample data
+    st.info("Using sample data instead.")
+    return load_sample_data()
 
 # Train model
 @st.cache_resource
