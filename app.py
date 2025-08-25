@@ -15,7 +15,6 @@ st.set_page_config(page_title="TechNova Attrition Predictor", layout="wide", ini
 
 # ---------------- File Paths ----------------
 # Use relative paths for better portability
-# This assumes the 'artifacts' and 'rawdata' folders are in the same directory as this script.
 artifacts_dir = "artifacts"
 rawdata_dir = "rawdata"
 
@@ -47,7 +46,7 @@ except Exception as e:
 st.title("TechNova Solutions Employee Attrition Predictor 🔮")
 
 st.markdown("""
-Welcome to the TechNova Solutions Attrition Predictor. This tool helps HR and management identify employees at risk of leaving the company. 
+Welcome to the TechNova Solutions Attrition Predictor. This tool helps HR and management identify employees at risk of leaving the company.
 By entering an employee's details, you can get a real-time prediction and take proactive measures to improve retention.
 """)
 
@@ -57,54 +56,45 @@ st.sidebar.header("Employee Details")
 def user_input_features():
     st.sidebar.subheader("General Information")
     age = st.sidebar.slider("Age", 18, 65, 30)
-    gender = st.sidebar.selectbox("Gender", ('Male', 'Female'))
-    job_role = st.sidebar.selectbox("Job Role", ('Sales Executive', 'Research Scientist', 'Laboratory Technician', 
-                                                'Manufacturing Director', 'Healthcare Representative', 'Manager', 
-                                                'Sales Representative', 'Research Director', 'Human Resources', 
-                                                'Manager R&D', 'Technical Staff'))
+    # gender = st.sidebar.selectbox("Gender", ('Male', 'Female'))
     department = st.sidebar.selectbox("Department", ('Sales', 'Research & Development', 'Human Resources'))
     
     st.sidebar.subheader("Work Experience & Compensation")
-    job_level = st.sidebar.slider("Job Level", 1, 5, 1)
     salary = st.sidebar.slider("Monthly Income ($)", 1000, 20000, 5000)
     tenure = st.sidebar.slider("Years at Company", 0, 40, 5)
-    total_working_years = st.sidebar.slider("Total Working Years", 0, 40, 5)
-    stock_option_level = st.sidebar.slider("Stock Option Level", 0, 3, 0)
     
     st.sidebar.subheader("Job & Life Satisfaction")
-    job_satisfaction = st.sidebar.selectbox("Job Satisfaction", (1, 2, 3, 4), format_func=lambda x: f"{x} - ({['Low', 'Medium', 'High', 'Very High'][x-1]})")
-    work_env_satisfaction = st.sidebar.selectbox("Environment Satisfaction", (1, 2, 3, 4), format_func=lambda x: f"{x} - ({['Low', 'Medium', 'High', 'Very High'][x-1]})")
-    job_involvement = st.sidebar.selectbox("Job Involvement", (1, 2, 3, 4), format_func=lambda x: f"{x} - ({['Low', 'Medium', 'High', 'Very High'][x-1]})")
-    work_life_balance = st.sidebar.selectbox("Work-Life Balance", (1, 2, 3, 4), format_func=lambda x: f"{x} - ({['Bad', 'Good', 'Better', 'Best'][x-1]})")
+    job_satisfaction = st.sidebar.selectbox("Job Satisfaction", (1, 2, 3, 4))
+    work_env_satisfaction = st.sidebar.selectbox("Environment Satisfaction", (1, 2, 3, 4))
+    work_life_balance = st.sidebar.selectbox("Work-Life Balance", (1, 2, 3, 4), help="1=Bad, 2=Good, 3=Better, 4=Best")
 
     st.sidebar.subheader("Other Metrics")
     overtime = st.sidebar.selectbox("Over Time", ('Yes', 'No'))
-    business_travel = st.sidebar.selectbox("Business Travel", ('Travel_Rarely', 'Travel_Frequently', 'Non-Travel'))
     
-    # These columns are required by the model but are not user-facing inputs.
+    # These columns are required by the model but are not user-facing inputs based on your previous code.
     # Provide plausible default values for them.
     marital_status = st.sidebar.selectbox("Marital Status", ('Single', 'Married', 'Divorced'))
-    education = st.sidebar.selectbox("Education Level", (1, 2, 3, 4, 5), format_func=lambda x: f"{x} - ({['Below College', 'College', 'Bachelor', 'Master', 'Doctor'][x-1]})")
-    promotion_last_5years = st.sidebar.slider("Promotions in Last 5 Years", 0, 1, 0)
+    education = st.sidebar.selectbox("Education Level", (1, 2, 3, 4, 5))
+    promotion_last_5years = st.sidebar.radio("Promotions in Last 5 Years?", (0, 1), format_func=lambda x: 'Yes' if x == 1 else 'No')
     years_since_last_promotion = st.sidebar.slider("Years Since Last Promotion", 0, 15, 0)
     training_hours = st.sidebar.slider("Training Hours", 0, 200, 80)
-
+    
     data = {
-        'age': age,
-        'job_satisfaction': job_satisfaction,
-        'salary': salary,
-        'tenure': tenure,
-        'work_env_satisfaction': work_env_satisfaction,
-        'overtime': overtime,
-        'marital_status': marital_status,
-        'education': education,
-        'department': department,
-        'promotion_last_5years': promotion_last_5years,
-        'years_since_last_promotion': years_since_last_promotion,
-        'training_hours': training_hours,
-        'work_life_balance': work_life_balance
+        'age': [age],
+        'job_satisfaction': [job_satisfaction],
+        'salary': [salary],
+        'tenure': [tenure],
+        'work_env_satisfaction': [work_env_satisfaction],
+        'overtime': [overtime],
+        'marital_status': [marital_status],
+        'education': [education],
+        'department': [department],
+        'promotion_last_5years': [promotion_last_5years],
+        'years_since_last_promotion': [years_since_last_promotion],
+        'training_hours': [training_hours],
+        'work_life_balance': [work_life_balance]
     }
-    features = pd.DataFrame(data, index=[0])
+    features = pd.DataFrame(data)
     return features
 
 input_df = user_input_features()
@@ -135,7 +125,7 @@ if st.button("Predict Attrition Risk"):
         st.markdown(f"**Probability of Retention:** `{retention_probability:.2f}%`")
         
         st.info("""
-        **How to interpret this result?** A 'High' risk suggests the employee has characteristics similar to those who have left the company in the past. 
+        **How to interpret this result?** A 'High' risk suggests the employee has characteristics similar to those who have left the company in the past.
         A 'Low' risk indicates a higher likelihood of retention.
         """)
 
@@ -144,7 +134,60 @@ if st.button("Predict Attrition Risk"):
 
 st.markdown("---")
 
-# The section for 'Key Attrition Insights' has been removed to eliminate the KeyError.
+## Dataset Insights and Statistics 📊
+
+st.header("Dataset Insights and Statistics")
+
+try:
+    df = pd.read_csv(data_path)
+    df.columns = df.columns.str.lower()
+    
+    # Create three columns for charts
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.subheader("Attrition by Department")
+        dept_attrition = df.groupby('department')['attrition'].mean().reset_index()
+        fig, ax = plt.subplots(figsize=(6, 4))
+        sns.barplot(x='department', y='attrition', data=dept_attrition, palette='viridis', ax=ax)
+        ax.set_title('Average Attrition Rate per Department')
+        ax.set_xlabel('Department')
+        ax.set_ylabel('Attrition Rate')
+        ax.tick_params(axis='x', rotation=45)
+        st.pyplot(fig)
+        
+    with col2:
+        st.subheader("Job Satisfaction by Attrition")
+        # Ensure job_satisfaction is in your dataset for this to work
+        if 'job_satisfaction' in df.columns and 'attrition' in df.columns:
+            satisfaction_avg = df.groupby('attrition')['job_satisfaction'].mean().reset_index()
+            satisfaction_avg['attrition'] = satisfaction_avg['attrition'].map({0: 'Stayed', 1: 'Left'})
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.barplot(x='attrition', y='job_satisfaction', data=satisfaction_avg, palette='plasma', ax=ax)
+            ax.set_title('Average Job Satisfaction')
+            ax.set_xlabel('Attrition Status')
+            ax.set_ylabel('Average Job Satisfaction (1-4)')
+            st.pyplot(fig)
+        else:
+            st.warning("Job satisfaction or attrition data is not available for charting.")
+    
+    with col3:
+        st.subheader("Attrition by Age")
+        # Calculate attrition rate for each age group
+        age_attrition_rate = df.groupby('age')['attrition'].mean().reset_index()
+        fig, ax = plt.subplots(figsize=(6, 4))
+        sns.lineplot(x='age', y='attrition', data=age_attrition_rate, marker='o', ax=ax, color='red')
+        ax.set_title('Attrition Rate by Age')
+        ax.set_xlabel('Age')
+        ax.set_ylabel('Attrition Rate')
+        st.pyplot(fig)
+            
+except FileNotFoundError:
+    st.warning("📊 Dataset file not found. Cannot display charts.")
+except KeyError as e:
+    st.warning(f"📊 A required column was not found in the dataset for charting: {e}")
+
+st.markdown("---")
 
 st.markdown("""
 <div style='text-align: center;'>
