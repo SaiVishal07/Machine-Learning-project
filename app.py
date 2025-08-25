@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 
+# ---------------- Page Config ----------------
 st.set_page_config(page_title="TechNova Attrition Simulator 🌟", layout="wide")
 
 # Background gradient
@@ -15,12 +16,12 @@ st.markdown("""
 st.title("TechNova Attrition Scenario Simulator 🌟")
 st.subheader("Enter employee profile and simulate scenarios 💼✨")
 
-# ---------------- Paths ----------------
+# ---------------- File Paths ----------------
 data_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\rawdata\technova_attrition_dataset.csv"
 model_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\artifacts\model.pkl"
 preprocessor_path = r"C:\Users\chand\OneDrive\Desktop\MLproject\MLproject\artifacts\preprocessor.pkl"
 
-# Load dataset and artifacts
+# ---------------- Load Dataset and Artifacts ----------------
 try:
     df = pd.read_csv(data_path)
     model = joblib.load(model_path)
